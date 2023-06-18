@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Push Notifications Example</title>
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+
+        textarea {
+            width: calc(100% - 20px);
+            height: 160px;
+            background-color: #f6f6f6;
+            border: 1px solid #ccc;
+            margin: 10px;
+            border-radius: 10px;
+            white-space: pre;
+            font-size: large;
+            color: #555;
+        }
+
+        #pushButton {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            text-align: center;
+            text-decoration: none;
+            font-size: 16px;
+            transition-duration: 0.4s;
+            cursor: pointer;
+        }
+
+        #pushButton:hover {
+            background-color: white;
+            color: black;
+            /* border: 2px solid #008CBA; */
+        }
+
+        #subscribeButton {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            text-align: center;
+            text-decoration: none;
+            font-size: 16px;
+            transition-duration: 0.4s;
+            cursor: pointer;
+        }
+
+        #subscribeButton:hover {
+            background-color: white;
+            color: black;
+            /* border: 2px solid #008CBA; */
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Push Notifications Example</h1>
+    <div id="version">Version: v0.0.1</div>
+    <button id="subscribeButton">Subscribe</button>
+    <textarea id="subscription" readonly></textarea>
+    <button id="pushButton">Send me a web push</button>
+    <script>
+        const webServiceUrl = "https://website.push.com";
+        const webServiceId = "web.com.YOUR_WEB_SERVICE_ID";
+        const pubKey = "BFXDWF_fSDAENLTpYoimqt9k9_WeiLffcj7uNWRk8lFUWiifNFdrcPGYjuQmjb0y3oxNGr5qSvlfbP2ctsr6BmE=";
+        const subscriptionEl = document.getElementById('subscription');
+
+        var sub = null;
+
+        document.getElementById("subscribeButton").addEventListener('click', subscribeUser);
+        document.getElementById("pushButton").addEventListener('click', sendPost);
+        subscriptionEl.addEventListener('click', copyToClipboard);
+
+        function sendPost() {
+            if (sub === null) {
+                alert('Please subscribe first');
+                return;
+            }
+            console.log('Sending POST', sub);
+
+            const options = {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    endpoint: sub.endpoint,
+                    expirationTime: sub.expirationTime,
+                    keys: {
+                        p256dh: sub.keys.p256dh,
+                        auth: sub.keys.auth
+                    }
+                })
+            };
+
+            console.log('Sending POST', options);
+
+            fetch('/push', options)
+                .then(response => response.json())
+                .then(response => console.log(response))
+                .catch(err => console.error(err));
+        }
+
+        function subscribeUser() {
+            updateSubscriptionStatus('Subscribing...');
+
+            if (!('serviceWorker' in navigator && 'PushManager' in window)) {
+                updateSubscriptionStatus('Push messaging is not supported');
+                console.warn('Push messaging is not supported');
+                return;
+            }
+
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(handleServiceWorkerRegistration)
+                .catch(handleError);
+        }
+
+        var sw = null;
+        function handleServiceWorkerRegistration(swReg) {
+            console.log('Service Worker is registered', swReg);
+            updateSubscriptionStatus('Service Worker is registered');
+            sw = swReg;
+            swReg.pushManager.getSubscription()
+                .then(handleGetSubscription, handleError);
+        }
+
+
+        function handleGetSubscription(subscription) {
+            if (subscription === null) {
+                createSubscription();
+            } else {
+                updateSubscriptionStatus(subscription);
+            }
+        }
+
+        function createSubscription() {
+            sw.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlB64ToUint8Array(pubKey)
+            })
+                .then(updateSubscriptionStatus)
+                .catch(handleError);
+        }
+
+        function updateSubscriptionStatus(subscription) {
+            sub = JSON.parse(JSON.stringify(subscription));
+            subscriptionEl.value = JSON.stringify(subscription, null, 2);
+        }
+
+        function handleError(error) {
+            console.error(error);
+            updateSubscriptionStatus(error);
+        }
+
+        function copyToClipboard() {
+            this.select();
+            document.execCommand('copy');
+        }
+
+        function urlB64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding)
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+    </script>
+</body>
+
+</html>
