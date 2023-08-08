@@ -47,6 +47,7 @@ pub struct PushRequest {
     endpoint: String,
     expiration_time: Option<String>,
     keys: Keys,
+    sentence: String,
 }
 
 /// This struct holds keys necessary to send a push notification.
@@ -82,7 +83,7 @@ impl Pusha {
                 tracing::info!("worker: {:?}", sentences);
 
                 let ttl = None;
-                let push_payload = Some("test".to_string());
+                let push_payload = Some(sentences.join(" "));
 
                 let ece_scheme = ContentEncoding::Aes128Gcm;
 
@@ -115,7 +116,6 @@ impl Pusha {
                 let signature = sig_builder.build().unwrap();
 
                 builder.set_vapid_signature(signature);
-                builder.set_payload(ContentEncoding::Aes128Gcm, "test".as_bytes());
 
                 let client = WebPushClient::new().unwrap();
 
@@ -151,7 +151,7 @@ async fn push(
     );
 
     let request = PushaRequest {
-        sentences: vec!["test".to_string()],
+        sentences: vec![req_body.sentence.clone()],
         responder,
         subscription_info,
     };

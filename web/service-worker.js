@@ -2,8 +2,10 @@ self.addEventListener('push', function(event) {
 
     console.log('Received a push message', event);
 
+    let message = event.data.text();
+
     var options = {
-        body: 'This is a push notification',
+        body: message,
         icon: 'images/icon.png',
         badge: 'images/badge.png'
     };
