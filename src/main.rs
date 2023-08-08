@@ -202,7 +202,7 @@ async fn main() -> std::io::Result<()> {
 
     // set app level spec
     let mut spec = DefaultApiRaw::default();
-    spec.info.version = "0.0.1".into();
+    spec.info.version = "0.0.2".into();
     spec.info.title = "king-pusha".into();
     tracing::info!("Starting web server...");
 

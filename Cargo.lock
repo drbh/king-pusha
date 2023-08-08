@@ -1201,7 +1201,7 @@ dependencies = [
 
 [[package]]
 name = "king-pusha"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "actix-files",
  "actix-rt",
